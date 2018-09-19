@@ -13,7 +13,6 @@ public class MoveBalls : MonoBehaviour
 
 	public int ballCount;
 
-	[SerializeField]
 	private List<GameObject> ballList;
 	private GameObject ballsContainerGO;
 
@@ -23,9 +22,9 @@ public class MoveBalls : MonoBehaviour
 	// Use this for initialization
 	void Start ()
 	{
-
 		bgCurve = GetComponent<BGCurve>();
 		ballList = new List<GameObject>();
+
 		ballsContainerGO = new GameObject();
 		ballsContainerGO.name = "Balls Container";
 
