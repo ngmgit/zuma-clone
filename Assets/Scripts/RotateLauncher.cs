@@ -6,21 +6,29 @@ public class RotateLauncher : MonoBehaviour
 {
 	public GameObject dummyBall;
 	public float ballSpeed = 10;
+	public GameObject instanceBall;
 
 	private Vector3 lookPos;
 
-	// Update is called once per frame
-	void Update ()
+	private void Start()
 	{
-		RotatePlayerAlongMousePosition();
+		CreateBall();
 	}
 
- 	void FixedUpdate()
+	// Update is called once per frame
+	private void Update ()
+	{
+		RotatePlayerAlongMousePosition();
+		SetBallPostion();
+
+	}
+
+ 	private void FixedUpdate()
 	{
 		ShootBall();
 	}
 
-	void RotatePlayerAlongMousePosition ()
+	private void RotatePlayerAlongMousePosition ()
 	{
 		Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 		RaycastHit hit;
@@ -34,31 +42,39 @@ public class RotateLauncher : MonoBehaviour
 		transform.LookAt (transform.position + lookDir, Vector3.up);
 	}
 
-	void ShootBall()
+	private void SetBallPostion()
+	{
+		instanceBall.transform.forward = transform.forward;
+		instanceBall.transform.position = transform.position + transform.forward * transform.localScale.z;
+	}
+
+	private void ShootBall()
 	{
 		if (Input.GetKeyDown(KeyCode.Mouse0))
 		{
-			GameObject go  = Instantiate(dummyBall, transform.position, Quaternion.identity);
-			go.SetActive(true);
-
-			go.tag = "NewBall";
-			go.gameObject.layer = LayerMask.NameToLayer("Default");
-
-			go.transform.position = transform.position;
-			go.transform.forward = transform.forward;
-
-			SetBallColor(go);
-			go.GetComponent<Rigidbody>().AddForce(go.transform.forward * ballSpeed);
+			instanceBall.GetComponent<Rigidbody>().AddForce(instanceBall.transform.forward * ballSpeed);
+			CreateBall();
 		}
 	}
 
-	void SetRandomColor(GameObject go)
+	private void CreateBall()
+	{
+		instanceBall = Instantiate(dummyBall, transform.position, Quaternion.identity);
+		instanceBall.SetActive(true);
+
+		instanceBall.tag = "NewBall";
+		instanceBall.gameObject.layer = LayerMask.NameToLayer("Default");
+
+		SetBallColor(instanceBall);
+	}
+
+	private void SetRandomColor(GameObject go)
 	{
 		Color color = new Color(Random.Range(0F,1F), Random.Range(0, 1F), Random.Range(0, 1F));
 		go.GetComponent<Renderer>().material.SetColor("_Color", color);
 	}
 
-	void SetBallColor(GameObject go)
+	private void SetBallColor(GameObject go)
 	{
 		BallColor randColor = MoveBalls.GetRandomBallColor();
 

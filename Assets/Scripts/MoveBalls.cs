@@ -63,12 +63,21 @@ public class MoveBalls : MonoBehaviour
 	// Update is called once per frame
 	private void Update ()
 	{
-		MoveAllBallsAlongPath();
+		if (ballList.Count > 0)
+		{
+			MoveAllBallsAlongPath();
+		}
+
 	}
 
 	private void MoveAllBallsAlongPath()
 	{
+
+		if (headballIndex != 0)
+			JoinStoppedSections(headballIndex, headballIndex + 1);
+
 		Vector3 tangent;
+		int movingBallCount = 1;
 		distance += pathSpeed * Time.deltaTime;
 
 		ballList[headballIndex].transform.position = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(distance, out tangent);
@@ -79,12 +88,14 @@ public class MoveBalls : MonoBehaviour
 
 		for (int i = headballIndex + 1; i < ballList.Count; i++)
 		{
-			float currentBallDist = distance - i * greenBall.transform.localScale.x;
+			float currentBallDist = distance - movingBallCount * greenBall.transform.localScale.x;
 			ballList[i].transform.position = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(currentBallDist , out tangent);
 			ballList[i].transform.rotation = Quaternion.LookRotation(tangent);
 
 			if (!ballList[i].activeSelf)
 				ballList[i].SetActive(true);
+
+			movingBallCount++;
 		}
 	}
 
@@ -120,9 +131,13 @@ public class MoveBalls : MonoBehaviour
 		ballList.Add(go.gameObject);
 	}
 
-	public void AddNewBallAt(GameObject go, int index)
+	private void JoinStoppedSections(int currentIdx, int nextSectionIdx)
 	{
 
+	}
+
+	public void AddNewBallAt(GameObject go, int index)
+	{
 		if (index > ballList.Count)
 			ballList.Add(go);
 		else
@@ -141,7 +156,7 @@ public class MoveBalls : MonoBehaviour
 
 		Color ballColor = go.GetComponent<Renderer>().material.GetColor("_Color");
 
-		for (int i = index; i > 0 ; i--)
+		for (int i = index; i >= 0 ; i--)
 		{
 			Color currrentBallColor = ballList[i].GetComponent<Renderer>().material.GetColor("_Color");
 			if(ballColor == currrentBallColor)
@@ -159,15 +174,23 @@ public class MoveBalls : MonoBehaviour
 				break;
 		}
 
-		if (back - front > 3)
+		if (back - front >= 2)
 		{
+			// Change the head index only if the deletion will happen at the middle
+			// i.e not a entire front or back section is removed
 			if (!(back == ballList.Count - 1 || front == 0))
 			{
 				headballIndex = front;
-				distance = distance - (back+1) * blueBall.transform.localScale.x;
+				distance -= (back) * blueBall.transform.localScale.x;
 			}
 
+			// Fix the distance for the new head only if the deletion will take place at middle or front
+			if (front == 0)
+				distance -= (back) * blueBall.transform.localScale.x;
+
+
 			RemoveBalls(front, back - front + 1);
+			Debug.Log("Removing at: " + front + " range: " + (back-front +1));
 		}
 	}
 
