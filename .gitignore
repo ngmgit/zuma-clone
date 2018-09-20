@@ -38,7 +38,3 @@ sysinfo.txt
 
 # Folders
 .vscode/*
-
-# Task Runner
-!.vscode/tasks.json
-!.vscode/launch.json

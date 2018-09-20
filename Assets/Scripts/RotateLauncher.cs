@@ -38,10 +38,15 @@ public class RotateLauncher : MonoBehaviour
 	{
 		if (Input.GetKeyDown(KeyCode.Mouse0))
 		{
-			dummyBall.GetComponent<Rigidbody>().velocity = Vector3.zero;
-			dummyBall.transform.position = transform.position;
-			dummyBall.transform.forward = transform.forward;
-			dummyBall.GetComponent<Rigidbody>().AddForce(dummyBall.transform.forward * ballSpeed);
+			Color color = new Color(Random.Range(0F,1F), Random.Range(0, 1F), Random.Range(0, 1F));
+			GameObject go  = Instantiate(dummyBall, transform.position, Quaternion.identity);
+			go.GetComponent<Renderer>().material.SetColor("_Color", color);
+			go.tag = "NewBall";
+			go.SetActive(true);
+			go.gameObject.layer = LayerMask.NameToLayer("Default");
+			go.transform.position = transform.position;
+			go.transform.forward = transform.forward;
+			go.GetComponent<Rigidbody>().AddForce(go.transform.forward * ballSpeed);
 		}
 	}
 }

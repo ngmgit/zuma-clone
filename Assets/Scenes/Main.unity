@@ -366,6 +366,7 @@ MonoBehaviour:
   blueBall: {fileID: 1879031676710954, guid: 6be17ac918b797b47ad8dcc32d8747ae, type: 2}
   yellowBall: {fileID: 1593256217672404, guid: 8254014e8f4276e44a0ebea8b47b8b05, type: 2}
   ballCount: 4
+  ballList: []
 --- !u!114 &349653070
 MonoBehaviour:
   m_ObjectHideFlags: 2
@@ -1082,6 +1083,18 @@ Prefab:
       propertyPath: m_CollisionDetection
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 1229346234362164, guid: 2e47d0a0b2bfdb44183e32860496e200, type: 2}
+      propertyPath: m_TagString
+      value: NewBall
+      objectReference: {fileID: 0}
+    - target: {fileID: 1229346234362164, guid: 2e47d0a0b2bfdb44183e32860496e200, type: 2}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1229346234362164, guid: 2e47d0a0b2bfdb44183e32860496e200, type: 2}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2e47d0a0b2bfdb44183e32860496e200, type: 2}
   m_IsPrefabAsset: 0
@@ -1184,7 +1197,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dummyBall: {fileID: 1928013406}
-  ballSpeed: 1000
+  ballSpeed: 1200
 --- !u!1 &1793815125
 GameObject:
   m_ObjectHideFlags: 0
@@ -1277,6 +1290,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1229346234362164, guid: 2e47d0a0b2bfdb44183e32860496e200,
     type: 2}
   m_PrefabInternal: {fileID: 1559912042}
+--- !u!114 &1928013407
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1928013406}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cab0d2e5d3f677843acd682af18c5cad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1951643927
 GameObject:
   m_ObjectHideFlags: 0
