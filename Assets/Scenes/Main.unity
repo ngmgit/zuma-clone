@@ -365,6 +365,7 @@ MonoBehaviour:
   greenBall: {fileID: 1473512860093798, guid: 1c51bcf3b0c7af342813ceadcf5188af, type: 2}
   blueBall: {fileID: 1879031676710954, guid: 6be17ac918b797b47ad8dcc32d8747ae, type: 2}
   yellowBall: {fileID: 1593256217672404, guid: 8254014e8f4276e44a0ebea8b47b8b05, type: 2}
+  pathSpeed: 5
   ballCount: 4
   ballList: []
 --- !u!114 &349653070
@@ -928,7 +929,7 @@ GameObject:
   m_Component:
   - component: {fileID: 542783371}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Level Container
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

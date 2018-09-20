@@ -21,7 +21,6 @@ public class BallCollider : MonoBehaviour
 
 			this.GetComponent<Rigidbody>().velocity = Vector2.zero;
 			this.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezePosition;
-
 			this.gameObject.tag = "ActiveBalls";
 			this.gameObject.layer = LayerMask.NameToLayer("ActiveBalls");
 

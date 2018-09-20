@@ -12,6 +12,14 @@ public struct ActiveBallList
 	bool isInTransition;
 }
 
+public enum BallColor
+{
+	red,
+	green,
+	blue,
+	yellow
+}
+
 public class MoveBalls : MonoBehaviour
 {
 	public GameObject redBall;
@@ -19,19 +27,24 @@ public class MoveBalls : MonoBehaviour
 	public GameObject blueBall;
 	public GameObject yellowBall;
 
+	public float pathSpeed;
 	public int ballCount;
 	[SerializeField]
 	private List<GameObject> ballList;
 	private GameObject ballsContainerGO;
+	private GameObject removedBallsContainer;
 
 	private BGCurve bgCurve;
 	private float distance;
 	private List<ActiveBallList> activeBallList;
 	private List<int> stopPositions;
+	private int headballIndex;
 
 	// Use this for initialization
 	private void Start ()
 	{
+		headballIndex = 0;
+
 		bgCurve = GetComponent<BGCurve>();
 		ballList = new List<GameObject>();
 		activeBallList = new List<ActiveBallList>();
@@ -39,8 +52,12 @@ public class MoveBalls : MonoBehaviour
 		ballsContainerGO = new GameObject();
 		ballsContainerGO.name = "Balls Container";
 
+		removedBallsContainer = new GameObject();
+		removedBallsContainer.name = "Removed Balls Container";
+
 		for (int i=0; i < ballCount; i++)
 			CreateNewBall();
+
 	}
 
 	// Update is called once per frame
@@ -52,15 +69,15 @@ public class MoveBalls : MonoBehaviour
 	private void MoveAllBallsAlongPath()
 	{
 		Vector3 tangent;
-		distance += 5 * Time.deltaTime;
+		distance += pathSpeed * Time.deltaTime;
 
-		ballList[0].transform.position = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(distance, out tangent);
-		ballList[0].transform.rotation = Quaternion.LookRotation(tangent);
+		ballList[headballIndex].transform.position = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(distance, out tangent);
+		ballList[headballIndex].transform.rotation = Quaternion.LookRotation(tangent);
 
-		if (!ballList[0].activeSelf)
-			ballList[0].SetActive(true);
+		if (!ballList[headballIndex].activeSelf)
+			ballList[headballIndex].SetActive(true);
 
-		for (int i = 1; i < ballList.Count; i++)
+		for (int i = headballIndex + 1; i < ballList.Count; i++)
 		{
 			float currentBallDist = distance - i * greenBall.transform.localScale.x;
 			ballList[i].transform.position = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(currentBallDist , out tangent);
@@ -73,23 +90,21 @@ public class MoveBalls : MonoBehaviour
 
 	private void CreateNewBall()
 	{
-		int rInt = Random.Range(0, 3);
-
-		switch (rInt)
+		switch (GetRandomBallColor())
 		{
-			case 0:
+			case BallColor.red:
 				InstatiateBall(redBall);
 				break;
 
-			case 1:
+			case BallColor.green:
 				InstatiateBall(greenBall);
 				break;
 
-			case 2:
+			case BallColor.blue:
 				InstatiateBall(blueBall);
 				break;
 
-			case 3:
+			case BallColor.yellow:
 				InstatiateBall(yellowBall);
 				break;
 
@@ -107,31 +122,69 @@ public class MoveBalls : MonoBehaviour
 
 	public void AddNewBallAt(GameObject go, int index)
 	{
-		Debug.Log(index);
-		if (index < 0)
-		{
-			int idx = 0;
-			ballList.Insert(idx, go);
-			SetBallIdxInContainer(go, idx);
-			return;
-		}
 
 		if (index > ballList.Count)
-		{
-			int idx = ballList.Count + 1;
 			ballList.Add(go);
-			SetBallIdxInContainer(go, idx);
-			return;
-		}
+		else
+			ballList.Insert(index, go);
 
 		go.transform.parent = ballsContainerGO.transform;
-		ballList.Insert(index, go);
-		SetBallIdxInContainer(go, index);
+		go.transform.SetSiblingIndex(index);
+
+		RemoveMatchedBalls(index, go);
 	}
 
-	private void SetBallIdxInContainer(GameObject go, int idx)
+	private void RemoveMatchedBalls(int index, GameObject go)
 	{
-		go.transform.parent = ballsContainerGO.transform;
-		go.transform.SetSiblingIndex(idx);
+		int front = index;
+		int back = index;
+
+		Color ballColor = go.GetComponent<Renderer>().material.GetColor("_Color");
+
+		for (int i = index; i > 0 ; i--)
+		{
+			Color currrentBallColor = ballList[i].GetComponent<Renderer>().material.GetColor("_Color");
+			if(ballColor == currrentBallColor)
+				front = i;
+			else
+				break;
+		}
+
+		for (int i = index; i < ballList.Count ; i++)
+		{
+			Color currrentBallColor = ballList[i].GetComponent<Renderer>().material.GetColor("_Color");
+			if(ballColor == currrentBallColor)
+				back = i;
+			else
+				break;
+		}
+
+		if (back - front > 3)
+		{
+			if (!(back == ballList.Count - 1 || front == 0))
+			{
+				headballIndex = front;
+				distance = distance - (back+1) * blueBall.transform.localScale.x;
+			}
+
+			RemoveBalls(front, back - front + 1);
+		}
+	}
+
+	private void RemoveBalls(int atIndex, int range)
+	{
+		for (int i = 0; i < range; i++)
+		{
+			ballList[atIndex + i].transform.parent = removedBallsContainer.transform;
+			ballList[atIndex + i].SetActive(false);
+		}
+
+		ballList.RemoveRange(atIndex, range);
+	}
+
+	public static BallColor GetRandomBallColor()
+	{
+		int rInt = Random.Range(0, 3);
+		return (BallColor)rInt;
 	}
 }
