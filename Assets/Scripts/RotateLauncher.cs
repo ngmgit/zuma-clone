@@ -28,6 +28,7 @@ public class RotateLauncher : MonoBehaviour
 		ShootBall();
 	}
 
+	// Rotate the launcher along the mouse position
 	private void RotatePlayerAlongMousePosition ()
 	{
 		Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -42,6 +43,7 @@ public class RotateLauncher : MonoBehaviour
 		transform.LookAt (transform.position + lookDir, Vector3.up);
 	}
 
+	// Set balls postions and forward w.r.t to the launcher
 	private void SetBallPostion()
 	{
 		instanceBall.transform.forward = transform.forward;

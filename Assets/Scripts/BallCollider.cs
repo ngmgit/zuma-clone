@@ -24,6 +24,7 @@ public class BallCollider : MonoBehaviour
 			this.gameObject.tag = "ActiveBalls";
 			this.gameObject.layer = LayerMask.NameToLayer("ActiveBalls");
 
+			// Get a vector from the center of the collided ball to the contact point
 			ContactPoint contact = other.contacts[0];
 			Vector3 CollisionDir = contact.point - other.transform.position;
 
