@@ -85,6 +85,9 @@ public class MoveBalls : MonoBehaviour
 		go.transform.parent = ballsContainerGO.transform;
 		go.transform.SetSiblingIndex(index);
 
+		if (index < headballIndex)
+			headballIndex++;
+
 		// adjust distance  for added ball
 		OnAddModifySections(index, 1);
 		RemoveMatchedBalls(index, go);
@@ -193,9 +196,11 @@ public class MoveBalls : MonoBehaviour
 		Color ballColor = go.GetComponent<Renderer>().material.GetColor("_Color");
 
 		int sectionKey = GetSectionKey(index);
+		int sectionKeyVal;
+		ballSections.TryGetValue(sectionKey, out sectionKeyVal);
 
 		// Check if any same color balls towards the front side
-		for (int i = index - 1; i >= ballSections[sectionKey] ; i--)
+		for (int i = index - 1; i >= sectionKeyVal; i--)
 		{
 			Color currrentBallColor = ballList[i].GetComponent<Renderer>().material.GetColor("_Color");
 			if(ballColor == currrentBallColor)
@@ -218,22 +223,40 @@ public class MoveBalls : MonoBehaviour
 		// If atleast 3 balls in a row are found at the new balls position
 		if (back - front >= 2)
 		{
+			// Modify the headballIndex only if the remove section is in the moving section
 			if (back > headballIndex)
 			{
-				// Change the head index only if the deletion will happen at the middle
-				// i.e not a entire front or back section is removed
-				if (!(back == ballList.Count - 1 || front == 0))
+				// whole back section will be removed change the headIndex to the front section value
+				if (front == sectionKeyVal && back == ballList.Count - 1)
 				{
-					headballIndex = front;
-					distance -= (back) * blueBall.transform.localScale.x;
+					if (ballSections.Count > 1)
+					{
+						int nextSectionFront;
+						ballSections.TryGetValue(front - 1, out nextSectionFront);
+						headballIndex = nextSectionFront;
+					}
 				}
+				// if the remove section is less that the back i.e front and middle part of the moving section
+				else
+				{
+					if(front >= sectionKeyVal && back != ballList.Count - 1)
+					{
+						headballIndex = front;
+					}
+				}
+			}
+			else
+			{
 
-				// Fix the distance for the new head only if the deletion will take place at middle or front
-				if (front == 0)
-					distance -= (back) * blueBall.transform.localScale.x;
+				headballIndex -= (back - front + 1);
 			}
 
+			Debug.Log("HEAD INDEX:" + headballIndex);
+
 			RemoveBalls(front, back - front + 1);
+
+			if (back > headballIndex)
+				GetComponent<BGCcMath>().CalcPositionByClosestPoint(ballList[headballIndex].transform.position, out distance);
 		}
 	}
 
@@ -315,7 +338,7 @@ public class MoveBalls : MonoBehaviour
 		ballSections.TryGetValue(sectionKey, out sectionKeyVal);
 
 		// completely remove the section
-		if (atIndex == sectionKeyVal && atIndex + range == sectionKey)
+		if (atIndex == sectionKeyVal && atIndex + range == ballList.Count + range)
 		{
 			DeleteEntireSection(atIndex, range, sectionKey);
 		}
@@ -329,8 +352,10 @@ public class MoveBalls : MonoBehaviour
 	{
 		List<KeyValuePair<int, int>> modSectionList = new List<KeyValuePair<int, int>>();
 
+		// If section is last but one i.e before the moving section
 		if (atIndex + range != ballList.Count + range)
 		{
+			Debug.Log("Entire: ");
 			// modify the back values for the immediate next section.
 			// modify the back and front values for other higher ones
 			ballSections.Remove(sectionKey);
@@ -371,8 +396,6 @@ public class MoveBalls : MonoBehaviour
 				ballSections.Remove(getLastButOne.Key);
 				ballSections[int.MaxValue] = getLastButOne.Value;
 			}
-
-			ballSections.Clear();
 		}
 	}
 
@@ -382,8 +405,10 @@ public class MoveBalls : MonoBehaviour
 
 		// Handle cases
 		// when delection takes place at the front or back of the section
-		if (atIndex == sectionKeyVal || atIndex + range == ballList.Count + range)
+		int end = sectionKey == int.MaxValue? ballList.Count + range - 1: sectionKey;
+		if (atIndex == sectionKeyVal || atIndex + range - 1 == end)
 		{
+			Debug.Log("Partial: Front/back");
 			if (sectionKey == int.MaxValue)
 				return;
 
@@ -400,29 +425,30 @@ public class MoveBalls : MonoBehaviour
 		// when delection takes place in middle of the section which creates a new section
 		else
 		{
+			Debug.Log("Partial: Middle");
 			// new section front
 			int newSectionKey = atIndex - 1;
 			ballSections.Add(newSectionKey, sectionKeyVal);
 
-			int nextSectionKey = sectionKey - range;
-
 			if (sectionKey != int.MaxValue)
 			{
+				int nextSectionKey = sectionKey - range;
+
 				ballSections.Remove(sectionKey);
 
 				// new section back
 				ballSections.Add( nextSectionKey, atIndex);
+
+				foreach (KeyValuePair<int, int> entry in ballSections)
+				{
+					if (entry.Key > nextSectionKey)
+						modSectionList.Add(entry);
+				}
 			}
 			else
 			{
 				ballSections[int.MaxValue] = atIndex;
 				return;
-			}
-
-			foreach (KeyValuePair<int, int> entry in ballSections)
-			{
-				if (entry.Key > nextSectionKey)
-					modSectionList.Add(entry);
 			}
 		}
 
