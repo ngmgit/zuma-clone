@@ -33,8 +33,6 @@ public class SectionData {
 		int sectionKeyVal;
 		ballSections.TryGetValue(sectionKey, out sectionKeyVal);
 
-		// Range will be 1 only when a new ball is added
-		// else it will be >= 3 when balls are to be removed
 		if (sectionKey != int.MaxValue) {
 			int newSectionKey = sectionKey + 1;
 			ballSections.Add(newSectionKey, sectionKeyVal);

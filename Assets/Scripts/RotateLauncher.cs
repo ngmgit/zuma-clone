@@ -97,9 +97,6 @@ public class RotateLauncher : MonoBehaviour
 			case BallColor.yellow:
 				go.GetComponent<Renderer>().material.SetColor("_Color", Color.yellow);
 				break;
-
-			default:
-				break;
 		}
 	}
 }

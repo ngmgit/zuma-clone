@@ -44,6 +44,8 @@ public class MoveBalls : MonoBehaviour
 	[SerializeField]
 	private int addBallIndex;
 
+	public Ease easeType;
+
 	// Use this for initialization
 	private void Start ()
 	{
@@ -82,7 +84,7 @@ public class MoveBalls : MonoBehaviour
 	 * Public Section
 	 * =============
 	 */
-	public void AddNewBallAt(GameObject go, int index)
+	public void AddNewBallAt(GameObject go, int index, int touchedBallIdx)
 	{
 		addBallIndex = index;
 
@@ -94,11 +96,11 @@ public class MoveBalls : MonoBehaviour
 		go.transform.parent = ballsContainerGO.transform;
 		go.transform.SetSiblingIndex(index);
 
-		if (index < headballIndex)
+		if(touchedBallIdx < headballIndex)
 			headballIndex++;
 
 		// adjust distance  for added ball
-		sectionData.OnAddModifySections(index);
+		sectionData.OnAddModifySections(touchedBallIdx);
 	}
 
 	/*
@@ -137,8 +139,8 @@ public class MoveBalls : MonoBehaviour
 			Vector3 trailPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(currentBallDist , out tangent);
 
 			if (i == addBallIndex)
-				ballList[i].transform.transform.DOMove(trailPos, 1)
-					.SetEase(Ease.OutQuad);
+				ballList[i].transform.transform.DOMove(trailPos, 0.5f)
+					.SetEase(easeType);
 			else
 				ballList[i].transform.transform.DOMove(trailPos, 1);
 
@@ -186,11 +188,13 @@ public class MoveBalls : MonoBehaviour
 	{
 		float nextSecdist;
 		GetComponent<BGCcMath>().CalcPositionByClosestPoint(ballList[nextSectionIdx].transform.position, out nextSecdist);
+
 		if (nextSecdist - distance <= blueBall.transform.localScale.x)
 		{
 			int nextSectionKeyVal;
 			sectionData.ballSections.TryGetValue(nextSectionIdx, out nextSectionKeyVal);
 			headballIndex = nextSectionKeyVal;
+
 			MergeSections(currentIdx, nextSectionKeyVal);
 			RemoveMatchedBalls(nextSectionIdx, ballList[nextSectionIdx]);
 

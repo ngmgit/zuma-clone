@@ -367,6 +367,8 @@ MonoBehaviour:
   pathSpeed: 4
   ballCount: 8
   ballList: []
+  addBallIndex: 0
+  easeType: 0
 --- !u!114 &349653070
 MonoBehaviour:
   m_ObjectHideFlags: 2
@@ -1289,7 +1291,7 @@ MonoBehaviour:
   curve: {fileID: 0}
   tweenSpeed: 0
   followTransform: {fileID: 0}
-  easeSetting: 0
+  easeSetting: 17
 --- !u!1 &1928013406 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1229346234362164, guid: 2e47d0a0b2bfdb44183e32860496e200,

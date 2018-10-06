@@ -32,9 +32,9 @@ public class BallCollider : MonoBehaviour
 
 			float angle  = Vector3.Angle(CollisionDir, other.transform.forward);
 			if ( angle > 90)
-				moveBallsScript.AddNewBallAt(this.gameObject, currentIdx + 1);
+				moveBallsScript.AddNewBallAt(this.gameObject, currentIdx + 1, currentIdx);
 			else
-				moveBallsScript.AddNewBallAt(this.gameObject, currentIdx);
+				moveBallsScript.AddNewBallAt(this.gameObject, currentIdx, currentIdx + 1);
 
 			this.gameObject.GetComponent<BallCollider>().enabled = false;
 		}
