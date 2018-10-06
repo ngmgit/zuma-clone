@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using BansheeGz.BGSpline.Components;
 using BansheeGz.BGSpline.Curve;
+using DG.Tweening;
 
 
 public struct ActiveBallList
@@ -40,11 +41,14 @@ public class MoveBalls : MonoBehaviour
 	private float distance;
 	private int headballIndex;
 	private SectionData sectionData;
+	[SerializeField]
+	private int addBallIndex;
 
 	// Use this for initialization
 	private void Start ()
 	{
 		headballIndex = 0;
+		addBallIndex = -1;
 
 		bgCurve = GetComponent<BGCurve>();
 		ballList = new List<GameObject>();
@@ -69,6 +73,9 @@ public class MoveBalls : MonoBehaviour
 
 		if (headballIndex != 0)
 			JoinStoppedSections(headballIndex, headballIndex - 1);
+
+		if (addBallIndex != -1)
+			AddNewBallAndDeleteMatched();
 	}
 
 	/*
@@ -77,6 +84,8 @@ public class MoveBalls : MonoBehaviour
 	 */
 	public void AddNewBallAt(GameObject go, int index)
 	{
+		addBallIndex = index;
+
 		if (index > ballList.Count)
 			ballList.Add(go);
 		else
@@ -89,8 +98,7 @@ public class MoveBalls : MonoBehaviour
 			headballIndex++;
 
 		// adjust distance  for added ball
-		sectionData.OnAddModifySections(index, 1);
-		RemoveMatchedBalls(index, go);
+		sectionData.OnAddModifySections(index);
 	}
 
 	/*
@@ -116,7 +124,8 @@ public class MoveBalls : MonoBehaviour
 
 		// use a head index value which leads the balls on the path
 		// This value will be changed when balls are delected from the path
-		ballList[headballIndex].transform.position = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(distance, out tangent);
+		Vector3 headPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(distance, out tangent);
+		ballList[headballIndex].transform.DOMove(headPos, 1);
 		ballList[headballIndex].transform.rotation = Quaternion.LookRotation(tangent);
 
 		if (!ballList[headballIndex].activeSelf)
@@ -125,7 +134,14 @@ public class MoveBalls : MonoBehaviour
 		for (int i = headballIndex + 1; i < ballList.Count; i++)
 		{
 			float currentBallDist = distance - movingBallCount * greenBall.transform.localScale.x;
-			ballList[i].transform.position = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(currentBallDist , out tangent);
+			Vector3 trailPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(currentBallDist , out tangent);
+
+			if (i == addBallIndex)
+				ballList[i].transform.transform.DOMove(trailPos, 1)
+					.SetEase(Ease.OutQuad);
+			else
+				ballList[i].transform.transform.DOMove(trailPos, 1);
+
 			ballList[i].transform.rotation = Quaternion.LookRotation(tangent);
 
 			if (!ballList[i].activeSelf)
@@ -183,6 +199,47 @@ public class MoveBalls : MonoBehaviour
 				GetComponent<BGCcMath>().CalcPositionByClosestPoint(ballList[headballIndex].transform.position, out nextSecdist);
 				distance = nextSecdist;
 			}
+		}
+	}
+
+	private void AddNewBallAndDeleteMatched()
+	{
+		// check if the ball position is on the path
+		int sectionKey = sectionData.GetSectionKey(addBallIndex);
+		int sectionKeyVal = sectionData.ballSections[sectionKey];
+
+		float neighbourDist = 0;
+		Vector3 currentTangent;
+		Vector3 currentPos = Vector3.zero;
+		Vector3 neighbourPos = Vector3.zero;
+
+		int end = sectionKey == int.MaxValue? ballList.Count - 1: sectionKey;
+		if(addBallIndex == sectionKeyVal)
+		{
+			neighbourPos = ballList[addBallIndex + 1].transform.position;
+			GetComponent<BGCcMath>().CalcPositionByClosestPoint(neighbourPos, out neighbourDist);
+			currentPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(neighbourDist + blueBall.transform.localScale.x, out currentTangent);
+		}
+		else if (addBallIndex == end)
+		{
+			neighbourPos = ballList[addBallIndex - 1].transform.position;
+			GetComponent<BGCcMath>().CalcPositionByClosestPoint(neighbourPos, out neighbourDist);
+			currentPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(neighbourDist - blueBall.transform.localScale.x, out currentTangent);
+		}
+		else
+		{
+			neighbourPos = ballList[addBallIndex + 1].transform.position;
+			GetComponent<BGCcMath>().CalcPositionByClosestPoint(neighbourPos, out neighbourDist);
+			currentPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(neighbourDist + blueBall.transform.localScale.x, out currentTangent);
+		}
+
+		float isNear = Vector2.Distance(new Vector2(currentPos.x, currentPos.y),
+			new Vector2(ballList[addBallIndex].transform.position.x, ballList[addBallIndex].transform.position.y));
+
+		if (isNear <= 0.1f)
+		{
+			RemoveMatchedBalls(addBallIndex, ballList[addBallIndex]);
+			addBallIndex = -1;
 		}
 	}
 
@@ -260,7 +317,7 @@ public class MoveBalls : MonoBehaviour
 
 			RemoveBalls(front, back - front + 1);
 
-			if (back > headballIndex)
+			if (back > headballIndex && ballList.Count > 0)
 				GetComponent<BGCcMath>().CalcPositionByClosestPoint(ballList[headballIndex].transform.position, out distance);
 		}
 	}

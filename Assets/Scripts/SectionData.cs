@@ -25,7 +25,7 @@ public class SectionData {
 		return key;
 	}
 
-	public void OnAddModifySections(int atIndex, int range)
+	public void OnAddModifySections(int atIndex)
 	{
 		List<KeyValuePair<int, int>> modSectionList = new List<KeyValuePair<int, int>>();
 		int sectionKey = GetSectionKey(atIndex);
