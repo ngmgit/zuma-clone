@@ -29,10 +29,13 @@ public class MoveBalls : MonoBehaviour
 	public GameObject yellowBall;
 
 	public float pathSpeed;
+	public float mergeSpeed;
 	public int ballCount;
 
+	public Ease easeType;
+	public Ease mergeEaseType;
 
-	[SerializeField]
+	// Private
 	private List<GameObject> ballList;
 	private GameObject ballsContainerGO;
 	private GameObject removedBallsContainer;
@@ -45,8 +48,6 @@ public class MoveBalls : MonoBehaviour
 	private int addBallIndex;
 	private int touchedBallIndex;
 	private float ballRadius;
-
-	public Ease easeType;
 
 	// Use this for initialization
 	private void Start ()
@@ -73,7 +74,7 @@ public class MoveBalls : MonoBehaviour
 	// Update is called once per frame
 	private void Update ()
 	{
-		if (sectionData.ballSections.Count > 1 && addBallIndex != -1)
+		if (sectionData.ballSections.Count > 1 && addBallIndex != -1 && addBallIndex < headballIndex)
 			MoveStopeedBallsAlongPath();
 
 		if (ballList.Count > 0)
@@ -84,6 +85,11 @@ public class MoveBalls : MonoBehaviour
 
 		if (addBallIndex != -1)
 			AddNewBallAndDeleteMatched();
+
+		if (CheckIfActiveEndsMatch())
+			MergeActiveEnds();
+
+		MergeIfStoppedEndsMatch();
 	}
 
 	/*
@@ -128,11 +134,64 @@ public class MoveBalls : MonoBehaviour
 	 * =============
 	 */
 
-	private void MoveStopeedBallsAlongPath()
+	private void CreateNewBall()
 	{
-		//if ()
+		switch (GetRandomBallColor())
+		{
+			case BallColor.red:
+				InstatiateBall(redBall);
+				break;
+
+			case BallColor.green:
+				InstatiateBall(greenBall);
+				break;
+
+			case BallColor.blue:
+				InstatiateBall(blueBall);
+				break;
+
+			case BallColor.yellow:
+				InstatiateBall(yellowBall);
+				break;
+		}
 	}
 
+	private void InstatiateBall(GameObject ballGameObject)
+	{
+		GameObject go = Instantiate(ballGameObject,  bgCurve[0].PositionWorld, Quaternion.identity, ballsContainerGO.transform);
+		go.SetActive(false);
+		ballList.Add(go.gameObject);
+	}
+
+	// When a new Ball is added to the one of the stopped sections move the balls to their correct positions
+	private void MoveStopeedBallsAlongPath()
+	{
+		int sectionKey = sectionData.GetSectionKey(addBallIndex);
+		int sectionKeyVal = sectionData.ballSections[sectionKey];
+		int movingBallCount = 1;
+
+		float sectionHeadDist;
+		GetComponent<BGCcMath>().CalcPositionByClosestPoint(ballList[sectionKeyVal].transform.position, out sectionHeadDist);
+
+		Vector3 tangent;
+		Vector3 trailPos;
+		float currentBallDist ;
+		for (int i = sectionKeyVal + 1; i <= sectionKey; i++)
+		{
+			currentBallDist = sectionHeadDist - movingBallCount * ballRadius;
+			trailPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(currentBallDist , out tangent);
+
+			if (i == addBallIndex && addBallIndex != -1)
+				ballList[i].transform.DOMove(trailPos, 0.5f)
+					.SetEase(easeType);
+			else
+				ballList[i].transform.DOMove(trailPos, 1);
+
+			movingBallCount++;
+		}
+	}
+
+	// Move the active section of balls along the path
 	private void MoveAllBallsAlongPath()
 	{
 		Vector3 tangent;
@@ -168,6 +227,7 @@ public class MoveBalls : MonoBehaviour
 		}
 	}
 
+	// When using a different tween speed, there has to be a reset to the tween speed when the added balls reaches it correct position
 	private bool CheckIfPushNeeded()
 	{
 		if (addBallIndex != ballList.Count)
@@ -184,35 +244,7 @@ public class MoveBalls : MonoBehaviour
 		return false;
 	}
 
-	private void CreateNewBall()
-	{
-		switch (GetRandomBallColor())
-		{
-			case BallColor.red:
-				InstatiateBall(redBall);
-				break;
-
-			case BallColor.green:
-				InstatiateBall(greenBall);
-				break;
-
-			case BallColor.blue:
-				InstatiateBall(blueBall);
-				break;
-
-			case BallColor.yellow:
-				InstatiateBall(yellowBall);
-				break;
-		}
-	}
-
-	private void InstatiateBall(GameObject ballGameObject)
-	{
-		GameObject go = Instantiate(ballGameObject,  bgCurve[0].PositionWorld, Quaternion.identity, ballsContainerGO.transform);
-		go.SetActive(false);
-		ballList.Add(go.gameObject);
-	}
-
+	// Move the section head a unit forward along the path when new ball is added
 	private void PushSectionForwardByUnit()
 	{
 		int sectionKey = sectionData.GetSectionKey(addBallIndex);
@@ -228,7 +260,7 @@ public class MoveBalls : MonoBehaviour
 			distance = modifiedDistance;
 
 		Vector3 movedPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(modifiedDistance, out tangent);
-		ballList[sectionKeyVal].transform.DOMove(movedPos, 0.5f);
+		ballList[sectionKeyVal].transform.DOMove(movedPos, 1);
 		ballList[sectionKeyVal].transform.rotation = Quaternion.LookRotation(tangent);
 	}
 
@@ -256,6 +288,15 @@ public class MoveBalls : MonoBehaviour
 		}
 	}
 
+	private void MergeSections(int currentIdx, int nextSectionKeyVal)
+	{
+		sectionData.ballSections.Remove(currentIdx - 1);
+		sectionData.ballSections[int.MaxValue] = nextSectionKeyVal;
+	}
+
+	// Check if the added new ball has reached its correct position on the path along the curve
+	// Also remove the match ball upon reaching the position
+	// set a flag to know if the ball has reached its correct position
 	private void AddNewBallAndDeleteMatched()
 	{
 		// check if the ball position is on the path
@@ -289,12 +330,6 @@ public class MoveBalls : MonoBehaviour
 			RemoveMatchedBalls(addBallIndex, ballList[addBallIndex]);
 			addBallIndex = -1;
 		}
-	}
-
-	private void MergeSections(int currentIdx, int nextSectionKeyVal)
-	{
-		sectionData.ballSections.Remove(currentIdx - 1);
-		sectionData.ballSections[int.MaxValue] = nextSectionKeyVal;
 	}
 
 	// Called by the collided new ball on collision with the active balls on the path
@@ -398,5 +433,55 @@ public class MoveBalls : MonoBehaviour
 		{
 			sectionData.DeletePartialSection(atIndex, range, sectionKey, sectionKeyVal, ballList.Count);
 		}
+	}
+
+	// Check if the active section front ball matches with the back of the next section
+	private bool CheckIfActiveEndsMatch()
+	{
+		if (sectionData.ballSections.Count <= 1)
+			return false;
+
+		Color headBallColor = ballList[headballIndex].GetComponent<Renderer>().material.GetColor("_Color");
+		Color nextSectionEndColor = ballList[headballIndex - 1].GetComponent<Renderer>().material.GetColor("_Color");
+
+		if (headBallColor == nextSectionEndColor)
+			return true;
+
+		return false;
+	}
+
+	// Move the section to the front of the active section
+	private void MergeActiveEnds ()
+	{
+		int sectionKey = headballIndex - 1;
+		int sectionKeyVal = sectionData.ballSections[sectionKey];
+
+		int movingBallCount = 1;
+		float sectionHeadDist;
+		GetComponent<BGCcMath>().CalcPositionByClosestPoint(ballList[sectionKey].transform.position, out sectionHeadDist);
+		sectionHeadDist -= mergeSpeed * Time.deltaTime;
+
+		Vector3 tangent;
+		Vector3 trailPos =  GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(sectionHeadDist, out tangent);
+		ballList[sectionKey].transform.DOMove(trailPos, 0.3f)
+			.SetEase(mergeEaseType);
+
+		for (int i = sectionKey - 1; i >= sectionKeyVal; i--)
+		{
+			float currentBallDist = sectionHeadDist + movingBallCount * ballRadius;
+			trailPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(currentBallDist , out tangent);
+
+			ballList[i].transform.DOMove(trailPos, 0.3f)
+				.SetEase(easeType);
+			ballList[i].transform.rotation = Quaternion.LookRotation(tangent);
+
+			movingBallCount++;
+		}
+	}
+
+	// Merge the Stopped End balls
+	private void MergeIfStoppedEndsMatch()
+	{
+
 	}
 }

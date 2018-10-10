@@ -365,10 +365,11 @@ MonoBehaviour:
   blueBall: {fileID: 1879031676710954, guid: 6be17ac918b797b47ad8dcc32d8747ae, type: 2}
   yellowBall: {fileID: 1593256217672404, guid: 8254014e8f4276e44a0ebea8b47b8b05, type: 2}
   pathSpeed: 4
+  mergeSpeed: 100
   ballCount: 8
-  ballList: []
-  addBallIndex: 0
   easeType: 1
+  mergeEaseType: 1
+  addBallIndex: 0
 --- !u!114 &349653070
 MonoBehaviour:
   m_ObjectHideFlags: 2
