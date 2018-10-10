@@ -34,7 +34,7 @@ public class BallCollider : MonoBehaviour
 			if ( angle > 90)
 				moveBallsScript.AddNewBallAt(this.gameObject, currentIdx + 1, currentIdx);
 			else
-				moveBallsScript.AddNewBallAt(this.gameObject, currentIdx, currentIdx + 1);
+				moveBallsScript.AddNewBallAt(this.gameObject, currentIdx, currentIdx);
 
 			this.gameObject.GetComponent<BallCollider>().enabled = false;
 		}

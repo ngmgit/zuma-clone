@@ -22,11 +22,12 @@ public class Test : MonoBehaviour
    {
        //curve = GetComponent<BGCurve>();
        //Debug.Log(curve.Points.Length);
+
    }
 
    void Update()
    {
-       //MoveOnCurve();
+        MoveTween();
    }
 
    private void MoveOnCurve()

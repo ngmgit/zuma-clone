@@ -38,17 +38,20 @@ public class MoveBalls : MonoBehaviour
 	private GameObject removedBallsContainer;
 
 	private BGCurve bgCurve;
-	private float distance;
+	private float distance= 0;
 	private int headballIndex;
 	private SectionData sectionData;
 	[SerializeField]
 	private int addBallIndex;
+	private int touchedBallIndex;
+	private float ballRadius;
 
 	public Ease easeType;
 
 	// Use this for initialization
 	private void Start ()
 	{
+		ballRadius = redBall.transform.localScale.x;
 		headballIndex = 0;
 		addBallIndex = -1;
 
@@ -70,6 +73,9 @@ public class MoveBalls : MonoBehaviour
 	// Update is called once per frame
 	private void Update ()
 	{
+		if (sectionData.ballSections.Count > 1 && addBallIndex != -1)
+			MoveStopeedBallsAlongPath();
+
 		if (ballList.Count > 0)
 			MoveAllBallsAlongPath();
 
@@ -87,6 +93,7 @@ public class MoveBalls : MonoBehaviour
 	public void AddNewBallAt(GameObject go, int index, int touchedBallIdx)
 	{
 		addBallIndex = index;
+		touchedBallIndex = touchedBallIdx;
 
 		if (index > ballList.Count)
 			ballList.Add(go);
@@ -99,8 +106,10 @@ public class MoveBalls : MonoBehaviour
 		if(touchedBallIdx < headballIndex)
 			headballIndex++;
 
-		// adjust distance  for added ball
 		sectionData.OnAddModifySections(touchedBallIdx);
+
+		// adjust distance for headBall or the position of the front in the added section
+		PushSectionForwardByUnit();
 	}
 
 	/*
@@ -118,6 +127,12 @@ public class MoveBalls : MonoBehaviour
 	 * Private Section
 	 * =============
 	 */
+
+	private void MoveStopeedBallsAlongPath()
+	{
+		//if ()
+	}
+
 	private void MoveAllBallsAlongPath()
 	{
 		Vector3 tangent;
@@ -135,14 +150,14 @@ public class MoveBalls : MonoBehaviour
 
 		for (int i = headballIndex + 1; i < ballList.Count; i++)
 		{
-			float currentBallDist = distance - movingBallCount * greenBall.transform.localScale.x;
+			float currentBallDist = distance - movingBallCount * ballRadius;
 			Vector3 trailPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(currentBallDist , out tangent);
 
-			if (i == addBallIndex)
-				ballList[i].transform.transform.DOMove(trailPos, 0.5f)
+			if (i == addBallIndex && addBallIndex != -1)
+				ballList[i].transform.DOMove(trailPos, 0.5f)
 					.SetEase(easeType);
 			else
-				ballList[i].transform.transform.DOMove(trailPos, 1);
+				ballList[i].transform.DOMove(trailPos, 1);
 
 			ballList[i].transform.rotation = Quaternion.LookRotation(tangent);
 
@@ -151,6 +166,22 @@ public class MoveBalls : MonoBehaviour
 
 			movingBallCount++;
 		}
+	}
+
+	private bool CheckIfPushNeeded()
+	{
+		if (addBallIndex != ballList.Count)
+		{
+			Vector3 ABallPos = ballList[addBallIndex].transform.position;
+
+			int neighbourBall = addBallIndex == touchedBallIndex? addBallIndex + 1: addBallIndex - 1;
+			Vector3 TBallPos = ballList[neighbourBall].transform.position;
+
+			if (Vector3.Distance(ABallPos, ballList[addBallIndex + 1].transform.position) <= 3)
+				return true;
+		}
+
+		return false;
 	}
 
 	private void CreateNewBall()
@@ -182,6 +213,25 @@ public class MoveBalls : MonoBehaviour
 		ballList.Add(go.gameObject);
 	}
 
+	private void PushSectionForwardByUnit()
+	{
+		int sectionKey = sectionData.GetSectionKey(addBallIndex);
+		int sectionKeyVal = sectionData.ballSections[sectionKey];
+
+		float modifiedDistance;
+		Vector3 tangent;
+
+		GetComponent<BGCcMath>().CalcPositionByClosestPoint(ballList[sectionKeyVal].transform.position, out modifiedDistance);
+		modifiedDistance += ballRadius;
+
+		if (addBallIndex >= headballIndex)
+			distance = modifiedDistance;
+
+		Vector3 movedPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(modifiedDistance, out tangent);
+		ballList[sectionKeyVal].transform.DOMove(movedPos, 0.5f);
+		ballList[sectionKeyVal].transform.rotation = Quaternion.LookRotation(tangent);
+	}
+
 	// Join the sections which were divided when balls were removed
 	// Just check the current head with the next value if they are close
 	private void JoinStoppedSections(int currentIdx, int nextSectionIdx)
@@ -189,7 +239,7 @@ public class MoveBalls : MonoBehaviour
 		float nextSecdist;
 		GetComponent<BGCcMath>().CalcPositionByClosestPoint(ballList[nextSectionIdx].transform.position, out nextSecdist);
 
-		if (nextSecdist - distance <= blueBall.transform.localScale.x)
+		if (nextSecdist - distance <= ballRadius)
 		{
 			int nextSectionKeyVal;
 			sectionData.ballSections.TryGetValue(nextSectionIdx, out nextSectionKeyVal);
@@ -214,31 +264,25 @@ public class MoveBalls : MonoBehaviour
 
 		float neighbourDist = 0;
 		Vector3 currentTangent;
-		Vector3 currentPos = Vector3.zero;
+		Vector3 actualPos = Vector3.zero;
 		Vector3 neighbourPos = Vector3.zero;
 
 		int end = sectionKey == int.MaxValue? ballList.Count - 1: sectionKey;
-		if(addBallIndex == sectionKeyVal)
-		{
-			neighbourPos = ballList[addBallIndex + 1].transform.position;
-			GetComponent<BGCcMath>().CalcPositionByClosestPoint(neighbourPos, out neighbourDist);
-			currentPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(neighbourDist + blueBall.transform.localScale.x, out currentTangent);
-		}
-		else if (addBallIndex == end)
+		if (addBallIndex == end)
 		{
 			neighbourPos = ballList[addBallIndex - 1].transform.position;
 			GetComponent<BGCcMath>().CalcPositionByClosestPoint(neighbourPos, out neighbourDist);
-			currentPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(neighbourDist - blueBall.transform.localScale.x, out currentTangent);
+			actualPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(neighbourDist - ballRadius, out currentTangent);
 		}
 		else
 		{
 			neighbourPos = ballList[addBallIndex + 1].transform.position;
 			GetComponent<BGCcMath>().CalcPositionByClosestPoint(neighbourPos, out neighbourDist);
-			currentPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(neighbourDist + blueBall.transform.localScale.x, out currentTangent);
+			actualPos = GetComponent<BGCcMath>().CalcPositionAndTangentByDistance(neighbourDist + ballRadius, out currentTangent);
 		}
 
-		float isNear = Vector2.Distance(new Vector2(currentPos.x, currentPos.y),
-			new Vector2(ballList[addBallIndex].transform.position.x, ballList[addBallIndex].transform.position.y));
+		Vector2 currentPos = new Vector2(ballList[addBallIndex].transform.position.x, ballList[addBallIndex].transform.position.y);
+		float isNear = Vector2.Distance(actualPos, currentPos);
 
 		if (isNear <= 0.1f)
 		{
@@ -313,7 +357,6 @@ public class MoveBalls : MonoBehaviour
 			}
 			else
 			{
-
 				headballIndex -= (back - front + 1);
 			}
 
